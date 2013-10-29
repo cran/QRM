@@ -1,7 +1,16 @@
-#include <math.h>
 #include <R.h>
-#include <R_ext/Random.h>
-#include "QRM.h"
+#include <math.h>
+
+#define RANDIN GetRNGstate();
+#define RANDOUT PutRNGstate();
+
+void frank(int *n, double *theta, double *output);
+void rgig(int *n, double *r, double *s, double *p, double *k1, double *k2, double *lambda, double *chi, double *psi, double *s1, double *s2, double *xsim); 
+double ef(double x, double lambda, double chi, double psi);
+
+void SEprocExciteFunc(int *nin, double *times, int *nmarks, double *marktimes, double *marks, double *beta, int *model, double *result);
+double contribH(double s, double y, double gammaval, double deltaval);
+double contribE(double s, double y, double gammaval, double rhoval, double deltaval);
 
 void frank(int *n, double *theta, double *output)
 {
@@ -64,40 +73,38 @@ double ef(double x, double lambda, double chi, double psi)
   return result;
 }
 
-void SEprocExciteFunc(int*n, double *times, int *nmarks, double *marktimes, double *marks, double *beta, int *model, double *result)
+void SEprocExciteFunc(int *nin, double *times, int *nmarks, double *marktimes, double *marks, double *beta, int *model, double *result)
 {
-  int i=0, j;
-  double thetime, gamma, delta, rho=0.0, tmp;
+  int i = 0, n = nin[0], j;
+  double thetime, gamma = beta[0], delta = 0.0, rho = 0.0, tmp;
 
-  gamma = *beta;
-  delta = 0.0;
-  if (*model ==2 )
+  if (*model == 2)
     /* Hawkes with mark influence */
-    delta = *(beta+1);
+    delta = gamma + 1;
   if (*model == 3)
     /* ETAS without mark influence */
-    rho = *(beta+1);
+    rho = gamma + 1;
   if (*model == 4){
     /* ETAS with mark influence */
-    rho = *(beta+1);
-    delta = *(beta+2);
+    rho = gamma + 1;
+    delta = gamma + 2;
   }
-  while (i < *n){
+  while (i < n){
     tmp = 0.0;
-    thetime = *(times+i);
+    thetime = times[i];
     j = 0;
-    while ((*(marktimes+j) < thetime) & (j < *nmarks)){
+    while ((marktimes[j] < thetime) & (j < *nmarks)){
       if (*model == 1)
-	tmp = tmp + contribH((thetime-*(marktimes+j)),0.0,gamma,delta);
+	tmp = tmp + contribH((thetime - marktimes[j]), 0.0, gamma, delta);
       if (*model == 2)
-	tmp = tmp + contribH((thetime-*(marktimes+j)),*(marks+j),gamma,delta);
+	tmp = tmp + contribH((thetime - marktimes[j]), marks[j], gamma, delta);
       if (*model == 3)
-	tmp = tmp + contribE((thetime-*(marktimes+j)),0.0,gamma,rho,delta);
+	tmp = tmp + contribE((thetime - marktimes[j]), 0.0, gamma, rho, delta);
       if (*model == 4)
-	tmp = tmp + contribE((thetime-*(marktimes+j)),*(marks+j),gamma,rho,delta);
+	tmp = tmp + contribE((thetime - marktimes[j]), marks[j], gamma, rho, delta);
       j++;
     }
-    *(result+i) = tmp;
+    result[i] = tmp;
     i++;
   }
 }
