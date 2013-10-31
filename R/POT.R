@@ -1,12 +1,46 @@
-fit.GPD <- function(data, threshold = NA, nextremes = NA, type = c("ml", "pwm"), information = c("observed", "expected"), optfunc = c("optim", "nlminb"), ...){
+## Copyright (C) 2013 Marius Hofert, Bernhard Pfaff
+##
+## This program is free software; you can redistribute it and/or modify it under
+## the terms of the GNU General Public License as published by the Free Software
+## Foundation; either version 3 of the License, or (at your option) any later
+## version.
+##
+## This program is distributed in the hope that it will be useful, but WITHOUT
+## ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+## FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+## details.
+##
+## You should have received a copy of the GNU General Public License along with
+## this program; if not, see <http://www.gnu.org/licenses/>.
+
+
+findthreshold <- function(data, ne)
+{
+    if(is.timeSeries(data)) data <- as.vector(series(data))
+    if(!is.vector(data))
+        stop("\ndata input to findthreshold() must be a vector or timeSeries with only one data column.\n")
+    if(all(length(data) < ne)) stop("\ndata length less than ne (number of exceedances.\n")
+    data <- rev(sort(as.numeric(data)))
+    thresholds <- unique(data)
+    indices <- match(data[ne], thresholds)
+    indices <- pmin(indices + 1., length(thresholds))
+    thresholds[indices]
+}
+
+## TODO: return "data" are actually the exceedances, not the input data!!!
+##       => bad naming here (use 'x' for input)
+fit.GPD <- function(data, threshold = NA, nextremes = NA, type = c("ml", "pwm"),
+                    information = c("observed", "expected"),
+                    optfunc = c("optim", "nlminb"), verbose=TRUE, ...)
+{
   type <- match.arg(type)
   optfunc <- match.arg(optfunc)
   information <- match.arg(information)
   if(is.na(nextremes) & is.na(threshold))
-    stop("Enter either a threshold or the number of upper extremes")
+    stop("\nEnter either a threshold or the number of upper extremes.\n")
   if(!is.na(nextremes) & !is.na(threshold))
-    stop("Enter EITHER a threshold or the number of upper extremes")
-  if(is.timeSeries(data)) data <- series(data) 
+    stop("\nEnter either a threshold or the number of upper extremes.\n")
+  if(is.timeSeries(data)) data <- series(data)
   data <- as.numeric(data)
   n <- length(data)
   if(!is.na(nextremes)){
@@ -15,19 +49,20 @@ fit.GPD <- function(data, threshold = NA, nextremes = NA, type = c("ml", "pwm"),
   exceedances <- data[data > threshold]
   excess <- exceedances - threshold
   Nu <- length(excess)
-  if(type == "ml"){
-    xbar <- mean(excess)
-    a0 <- xbar
-    gamma <- -0.35
-    delta <- 0.0
-    pvec <- ((1.:Nu) + delta)/(Nu + delta)
-    a1 <- mean(sort(excess) * (1. - pvec))
-    xi <- 2. - a0/(a0 - 2. * a1)
-    beta <- (2. * a0 * a1)/(a0 - 2. * a1)
-    par.ests <- c(xi,beta)
-    negloglik <- function(theta, ydata){
-      -sum(dGPD(ydata, theta[1], abs(theta[2]), log = TRUE))
-    }
+
+  ## probability weighted moments (pwm)
+  xbar <- mean(excess)
+  a0 <- xbar
+  gamma <- -0.35
+  delta <- 0.0
+  pvec <- ((1.:Nu) + delta)/(Nu + delta)
+  a1 <- mean(sort(excess) * (1. - pvec))
+  xi <- 2. - a0/(a0 - 2. * a1) # estimated xi
+  beta <- (2. * a0 * a1)/(a0 - 2. * a1) # estimated beta
+  par.ests <- c(xi, beta) # initial estimates (improved by type = "ml")
+
+  if(type == "ml"){ # maximum likelihood (based on pwm initial values)
+    negloglik <- function(theta, ydata) -sum(dGPD(ydata, theta[1], abs(theta[2]), log = TRUE))
     deriv <- function(theta, ydata){
       xi <- theta[1]
       beta <- theta[2]
@@ -58,20 +93,12 @@ fit.GPD <- function(data, threshold = NA, nextremes = NA, type = c("ml", "pwm"),
       varcov <- matrix(c(one, cov, cov, two), 2.)
     }
   }
-  if(type == "pwm"){
-    xbar <- mean(excess)
-    a0 <- xbar
-    gamma <- -0.35
-    delta <- 0.0
-    pvec <- ((1.:Nu) + delta)/(Nu + delta)
-    a1 <- mean(sort(excess) * (1. - pvec))
-    xi <- 2. - a0/(a0 - 2. * a1)
-    beta <- (2. * a0 * a1)/(a0 - 2. * a1)
-    par.ests <- c(xi, beta)
+
+  if(type == "pwm"){ # probability weighted moments
     denom <- Nu * (1. - 2. * xi) * (3. - 2. * xi)
     if(xi > 0.5){
       denom <- NA
-      warning("Asymptotic standard errors not available for PWM Type when xi > 0.5")
+      if(verbose) warning("\nAsymptotic standard errors not available for PWM Type when xi > 0.5.\n")
     }
     one <- (1. - xi) * (1. - xi + 2. * xi^2.) * (2. - xi)^2.
     two <- (7. - 18. * xi + 11. * xi^2. - 2. * xi^3.) * beta^2.
@@ -81,9 +108,10 @@ fit.GPD <- function(data, threshold = NA, nextremes = NA, type = c("ml", "pwm"),
     converged <- NA
     ll.max <- NA
   }
+
   par.ses <- sqrt(diag(varcov))
   p.less.thresh <- 1. - Nu / n
-  out <- list(n = length(data), data = exceedances, threshold = threshold,
+  out <- list(n = length(data), data = exceedances, threshold = threshold, # TODO: data are exceedances! not original data! confusing...
               p.less.thresh = p.less.thresh, n.exceed = Nu, type = type,
               par.ests = par.ests, par.ses = par.ses, varcov = varcov,
               information = information, converged = converged, ll.max = ll.max)
@@ -91,91 +119,164 @@ fit.GPD <- function(data, threshold = NA, nextremes = NA, type = c("ml", "pwm"),
   names(out$par.ses) <- c("xi", "beta")
   out
 }
-## POT: Threshold
-findthreshold <- function(data, ne){
-  if(is.timeSeries(data)) data <- as.vector(series(data))
-  if(!is.vector(data)) stop("data input to findthreshold() must be a vector or timeSeries with only one data column")
-  if(all(length(data) < ne)) stop("data length less than ne (number of exceedances")
-  data <- rev(sort(as.numeric(data)))
-  thresholds <- unique(data)
-  indices <- match(data[ne], thresholds)
-  indices <- pmin(indices + 1., length(thresholds))
-  thresholds[indices]
+
+##' @title Plot Estimated Tail Probabilities
+##' @param object object as returned by fit.GPD()
+##' @param ppoints.gpd (p)points in (0,1) for evaluating GPD tail estimate
+##' @param xlab x axis label
+##' @param ylab y axis label
+##' @param ... additional arguments passed to plot()
+##' @return invisible()
+##' @author Marius Hofert
+plotTail <- function(object, ppoints.gpd = ppoints(256),
+                     main = "Estimated tail probabilities",
+                     xlab = "Exceedances x", ylab = expression(1-hat(F)[n](x)), ...)
+{
+    ## checks
+    stopifnot(0 < ppoints.gpd, ppoints.gpd < 1)
+
+    ## extract results from object
+    exceedance <- object$data # exceedances
+    u <- object$threshold # threshold
+    xi.hat <- object$par.ests["xi"] # xi estimate
+    beta.hat <- object$par.ests["beta"] # beta estimate
+
+    ## compute empirical tail estimator
+    ## Note: Let X be a loss and Y an excess over u (Y = X - u for X > u)
+    ##       Then EKM (1997, (6.42)) says \bar{F}(u+y) = \bar{F}(u) * \bar{F}_u(y).
+    ##       With estimators: \hat{\bar{F}}_n(u+y) = (Nu/n) * \hat{\bar{F}}_{u,n}(y)
+    ##       If y are *sorted* excesses then u+y = sorted_exceedance and hence
+    ##       \hat{\bar{F}}_n(sorted_exceedance) =  (Nu/n) * \hat{\bar{F}}_{u,n}(sorted_excess)
+    ##                                          =  (Nu/n) * (Nu:1)/Nu
+    ##                                          ~= (Nu/n) * rev(ppoints(Nu))
+    Nu <- length(exceedance) # number of exceedances
+    X. <- sort(exceedance) # sorted exceedances (sorted X which are > u)
+    Nu.n <- 1 - object$p.less.thresh # empirical probability of (exceedances) x > u = Nu/n
+    Fnbar.hat.X. <- Nu.n * rev(ppoints(Nu)) # \hat{\bar{F}}_n(X.) where \hat{F}_n is based on *all* data (standard edf)
+
+    ## compute GPD tail estimator
+    ## Note: As before, \hat{\bar{F}}_n(u+y) ~= (Nu/n) * rev(ppoints(Nu))
+    ##       By the GPD approxi, the left-hand side equals
+    ##       (Nu/n) * (1-F_{GPD(xi.hat,beta.hat)}(y))
+    ##       Solving for y leads y ~= F_{GPD(xi.hat,beta.hat)}^{-1}(1-rev(ppoints(Nu)))
+    ##                              = F_{GPD(xi.hat,beta.hat)}^{-1}(ppoints(Nu))
+    ##       => sorted_exceedance = u+y = u + F_{GPD(xi.hat,beta.hat)}^{-1}(ppoints(Nu))
+    x.gpd.est <- u + qGPD(ppoints.gpd, xi.hat, beta.hat) # 'sorted_exceedance'
+    y.gpd.est <- Nu.n * rev(ppoints.gpd) # as before
+
+    ## plot
+    xlim. <- range(X., x.gpd.est)
+    ## xlim. = range(object$data, x.gpd.est)
+    ##       = range(object$data, u + qGPD(ppoints.gpd, xi.hat, beta.hat)) # => important for showRM()
+    ylim. <- range(Fnbar.hat.X., y.gpd.est) # y range
+    plot(X., Fnbar.hat.X., xlim = xlim., ylim = ylim., # make sure everything is visible
+         log = "xy", main = main, xlab = xlab, ylab = ylab, ...) # plot emp. tail estimator
+    lines(x.gpd.est, y.gpd.est) # add GPD tail estimator
+
+    ## return
+    invisible()
 }
-## Tail plot
-plotTail <- function(object, extend = 2, fineness = 1000, ...){
-  data <- as.numeric(object$data)
-  threshold <- object$threshold
-  xi <- object$par.ests[names(object$par.ests) == "xi"]
-  beta <- object$par.ests[names(object$par.ests) == "beta"]
-  xpoints <- sort(data)
-  ypoints <- ppoints(sort(data))
-  xmax <- max(xpoints) * extend
-  prob <- object$p.less.thresh
-  ypoints <- (1- prob) * (1 - ypoints)
-  x <- threshold + qGPD((0:(fineness - 1)) / fineness, xi, beta)
-  x <- pmin(x,xmax)
-  y <- pGPD(x - threshold, xi, beta)
-  y <- (1 - prob) * (1 - y)
-  plot(xpoints, ypoints, xlim = range(threshold, xmax), ylim = range(ypoints, y), xlab = "x (on log scale)", ylab = "1-F(x) (on log scale)", log = "xy", ...)
-  lines(x, y)
-  return(invisible(list(xpoints = xpoints, ypoints = ypoints, x = x, y = y)))
-}
-## Risk Measures
-showRM <- function(object, alpha, RM = c("VaR", "ES"), extend=2, ci.p = 0.95, like.num = 50., ...){
-  threshold <- object$threshold
-  par.ests <- object$par.ests
-  xihat <- par.ests[names(par.ests) == "xi"]
-  betahat <- par.ests[names(par.ests) == "beta"]
-  p.less.thresh <- object$p.less.thresh
-  a <- (1 - alpha) / (1 - p.less.thresh)
-  quant <- threshold + betahat * (a^(-xihat) - 1) / xihat
-  es <- quant / (1 - xihat) + (betahat - xihat * threshold) / (1 - xihat)
-  point.est <- switch(RM, VaR = quant, ES = es)
-  plotTail(object, extend = 2)
-  abline(v = point.est)
-  xmax <- max(object$data) * extend
-  parloglik <- function(theta, excessesIn, xpiIn, aIn, uIn, RMIn){
-    xi <- theta
-    if(RMIn == "VaR") beta <- xi * (xpiIn - uIn) / (aIn^(-xi) - 1)
-    if(RMIn == "ES")  beta <- ((1 - xi) * (xpiIn - uIn))/(((aIn^( - xi) - 1) / xi) + 1)
-    if(beta <= 0){
-      out <- 1.0e17
-    } else {
-      out <- -sum(dGPD(excessesIn, xi, beta, log = TRUE))
+
+##' @title Plot Estimated Tail Probabilities with Risk Measure Estimates and CIs
+##' @param object object as returned by fit.GPD()
+##' @param alpha RM 'confidence' level (e.g., 0.999)
+##' @param RM risk measure (character string)
+##' @param like.num number of likelihood evaluation points for CIs
+##' @param ppoints.gpd (p)points in (0,1) for evaluating GPD tail estimate
+##' @param xlab x axis label
+##' @param ylab y axis label
+##' @param legend.pos position as accepted by legend() or NULL (no legend)
+##' @param ... additional arguments passed to optim()
+##' @return invisible()
+##' @author Marius Hofert
+##' TODO: we should use optimize(), improve on nLL(), and use ... for plot!
+showRM <- function(object, alpha, RM = c("VaR", "ES"),
+                   like.num = 64, ppoints.gpd = ppoints(256),
+                   xlab = "Exceedances x", ylab = expression(1-hat(F)[n](x)),
+                   legend.pos = "topright", ...)
+{
+    ## checks
+    stopifnot(0 < alpha, alpha < 1, like.num > 0)
+
+    ## extract results from object
+    exceedance <- object$data # exceedances
+    u <- object$threshold # threshold
+    xi.hat <- object$par.ests["xi"] # xi estimate
+    beta.hat <- object$par.ests["beta"] # beta estimate
+    Nu.n <- 1-object$p.less.thresh # empirical probability of (exceedances) x > u = Nu/n
+
+    ## risk measure estimates
+    a <- (1 - alpha) / Nu.n
+    VaR <- u + beta.hat * (a^(-xi.hat) - 1) / xi.hat
+    ES <- VaR / (1 - xi.hat) + (beta.hat - xi.hat * u) / (1 - xi.hat)
+    RM <- match.arg(RM)
+    RM.hat <- switch(RM,
+                     "VaR" = VaR,
+                     "ES" = ES,
+                     stop("\nwrong argument 'RM'.\n")) # risk measure estimate
+
+    ## x values for CI evaluation
+    start <- switch(RM,
+                    "VaR" = u,
+                    "ES" = VaR,
+                    stop("\nwrong argument 'RM'.\n"))
+    xlim.plotTail <- range(exceedance, u + qGPD(ppoints.gpd, xi=xi.hat, beta=beta.hat)) # x range (as for plotTail()!)
+    x <- exp(seq(log(start), log(xlim.plotTail[2]), length=like.num)) # x values where the evaluate likelihood (based confidence intervals)
+
+    ## computing CIs
+    nLL <- function(xi., x) { # xi. = running xi; x = x-values (risk measure value on x-axis) where the evaluate CIs
+        beta <- switch(RM,
+                     "VaR" = xi. * (x - u) / (a^(-xi.) - 1),
+                     "ES" = ((1 - xi.) * (x - u)) / (((a^( - xi.) - 1) / xi.) + 1),
+                     stop("\nwrong argument 'RM'.\n"))
+        if(beta <= 0) 1e17 # dGPD() not defined there since log(beta)... but optim() needs finite initial value
+        else -sum(dGPD(exceedance-u, xi., beta, log=TRUE)) # -log-likelihood
     }
-    out
-  }
-  parmax <- NULL
-  start <- switch(RM, VaR = threshold, ES = quant)
-  xp <- exp(seq(from = log(start), to = log(xmax), length = like.num))
-  for(i in 1.:length(xp)){
-    optimfit2 <- optim(xihat, parloglik, excessesIn=(object$data - threshold), xpiIn=xp[i], 
-                       aIn=a, uIn=threshold, RMIn=RM, ...)
-    parmax <- rbind(parmax, -parloglik(optimfit2$par, excessesIn = (object$data - threshold), xpiIn = xp[i], aIn = a, uIn = threshold, RMIn = RM))
-  }
-  overallmax <-  object$ll.max
-  crit <- overallmax - qchisq(0.999, 1) / 2.
-  cond <- parmax > crit
-  xp <- xp[cond]
-  parmax <- parmax[cond]
-  par(new = TRUE)
-  plot(xp, parmax, type = "n", xlab = "", ylab = "", axes = FALSE,
-       ylim = range(overallmax, crit), xlim = range(threshold, xmax), log = "x")
-  axis(4, at = overallmax - qchisq(c(0.95, 0.99), 1.)/2., labels = c("95", "99"), tick = TRUE)
-  aalpha <- qchisq(ci.p, 1.)
-  abline(h = overallmax - aalpha / 2, lty = 2, col = 2)
-  cond <- !is.na(xp) & !is.na(parmax)
-  smth <- spline(xp[cond], parmax[cond], n = 200.)
-  lines(smth, lty = 2., col = 2.)
-  ci <- smth$x[smth$y > overallmax - aalpha/2.]
-  out <- c(min(ci), point.est, max(ci))
-  names(out) <- c("Lower CI", "Estimate", "Upper CI")
-  out
+    ## 1d-optimization in xi for fixed x-value (= risk measure value; each of the above 'x').
+    ## The optimal *value* gives the likelihood value at the optimal xi,
+    ## i.e., the y-value of the likelihood curve at the particular x (= risk measure value)
+    ## (xi.hat = initial xi value)
+    opt <- unlist(lapply(x, function(x.) -optim(xi.hat, fn=nLL, x=x., ...)$value))
+    ## TODO more docu here
+    crit <- object$ll.max - qchisq(0.999, df=1) / 2
+    x <- x[opt > crit]
+    opt <- opt[opt > crit]
+    bothFine <- !is.na(x) & !is.na(opt)
+    smth <- spline(x[bothFine], opt[bothFine], n = 256)
+
+    ## plot
+    opar <- par(no.readonly=TRUE)
+    on.exit(par(opar))
+    par(mar=c(5.1, 4.1+0.5, 4.1, 2.1+2.2)) # enlarge plot region (a bit to the left and more to the right)
+    plotTail(object, ppoints.gpd=ppoints.gpd, xlab=xlab, ylab=ylab) # estimated tail probabilities (empirical and GPD)
+    abline(v = RM.hat, lty=2) # vertical line indicating RM estimate
+    par(new = TRUE)
+    plot(x, opt, type = "n", xlab = "", ylab = "", axes = FALSE,
+         xlim = xlim.plotTail, log = "x") # does *not* plot, only sets up the coordinate system (as for plotTail()!)
+    lines(smth, lty=3, lwd=1.5) # RM CIs
+    axis(4, at = object$ll.max - qchisq(c(0.5, 0.8, 0.9, 0.95, 0.99, 0.995, 0.999), df=1.)/2.,
+         labels = c(0.5, 0.8, 0.9, 0.95, 0.99, 0.995, 0.999)) # y axis on the right
+    mtext(text="Confidence intervals", side=4, line=3) # label
+    if(!is.null(legend.pos)) {
+        legend(legend.pos, inset=0.01, cex=0.8, lty=1:3, lwd=c(1, 1, 1.5), col=1, bty="n",
+               legend=as.expression(
+                      c(substitute("GPD("*xi.*","~beta.*") tail estimate",
+                                   list(xi.=round(xi.hat,2), beta.=round(beta.hat,2))),
+                        substitute(RM.[a]~"estimate (="~RM..*")",
+                                   list(a=alpha, RM.=RM, RM..=round(RM.hat,2))),
+                        substitute(RM.[a]~"CIs", list(a=alpha, RM.=RM)) )))
+    }
+
+    ## ci <- smth$x[smth$y > object$ll.max - qchisq(0.95, df=1)/2]
+    ## c("Lower CI" = min(ci), "Estimate" = RM.hat, "Upper CI" = max(ci))
+    ## return
+    invisible()
 }
+
 ## ME plot
-MEplot <- function(data, omit = 3., labels = TRUE, ...){
-  if(is.timeSeries(data)) data <- series(data)   
+MEplot <- function(data, omit = 3., main = "Mean-Excess Plot", xlab = "Threshold", ylab = "Mean Excess", ...)
+{
+  if(is.timeSeries(data)) data <- series(data)
   data <- as.numeric(data)
   n <- length(data)
   myrank <- function(x, na.last = TRUE){
@@ -195,12 +296,13 @@ MEplot <- function(data, omit = 3., labels = TRUE, ...){
   points <- points[ - nl]
   excess <- cumsum(rev(data))[n.excess] - n.excess * points
   y <- excess/n.excess
-  plot(points[1.:(nl - omit)], y[1.:(nl - omit)], xlab = "", ylab = "",...)
-  if(labels) title(xlab = "Threshold", ylab = "Mean Excess")
+  plot(points[1.:(nl - omit)], y[1.:(nl - omit)], main = main, xlab = xlab, ylab = ylab, ...)
   return(invisible(list(x = points[1.:(nl - omit)], y = y[1.:(nl - omit)])))
 }
+
 ## Risk Measures
-RiskMeasures <- function(out, p){
+RiskMeasures <- function(out, p)
+{
   u <- out$threshold
   par.ests <- out$par.ests
   xihat <- par.ests[names(par.ests) == "xi"]
@@ -220,9 +322,11 @@ RiskMeasures <- function(out, p){
   es <- short(p, xihat, betahat, u, lambda)
   cbind(p, quantile = q, sfall = es)
 }
-## GPD shape varies with threshold or number of extremes. 
+
+## GPD shape varies with threshold or number of extremes.
 xiplot <- function(data, models = 30., start = 15., end = 500., reverse = TRUE,
-                   ci = 0.95, auto.scale = TRUE, labels = TRUE, table = FALSE, ...){
+                   ci = 0.95, auto.scale = TRUE, labels = TRUE, table = FALSE, ...)
+{
   if(is.timeSeries(data)) data <- series(data)
   data <- as.numeric(data)
   qq <- 0.
@@ -267,9 +371,29 @@ xiplot <- function(data, models = 30., start = 15., end = 500., reverse = TRUE,
   if(table) print(mat)
   return(invisible(list(x = index, y = y, upper = u, lower = l)))
 }
-## Hill Plot
-hillPlot <- function (data, option = c("alpha", "xi", "quantile"), start = 15, 
-    end = NA, reverse = FALSE, p = NA, ci = 0.95, auto.scale = TRUE, labels = TRUE, ...){
+
+##' @title Hill estimator for the tail index alpha (or 1/alpha) when
+##'        1-F(x) ~ x^{-alpha}*L(x), alpha > 0
+##' @param data data
+##' @param k number of upper order statistics
+##' @param tail.index logical indicating whether the estimator of the tail index
+##'        alpha is returned
+##' @return Hill estimator for alpha (the default) or 1/alpha
+##' @author Marius Hofert
+##' @note - See EKM (1997, p. 190, Eq. (4.12))
+##'       - vectorized in k
+hill <- function(data, k, tail.index=TRUE)
+{
+    stopifnot(k >= 2, length(data) >= max(k), data > 0)
+    lxs <- sort(log(data), decreasing=TRUE)
+    res <- vapply(k, function(k.) mean(lxs[seq_len(k.-1)]) - lxs[k.], NA_real_)
+    if(tail.index) 1/res else res
+}
+
+## Hill Plot (not using hill())
+hillPlot <- function (data, option = c("alpha", "xi", "quantile"), start = 15,
+    end = NA, reverse = FALSE, p = NA, ci = 0.95, auto.scale = TRUE, labels = TRUE, ...)
+{
   if(is.timeSeries(data)) data <- as.vector(series(data))
   data <- as.numeric(data)
   ordered <- rev(sort(data))
@@ -277,7 +401,7 @@ hillPlot <- function (data, option = c("alpha", "xi", "quantile"), start = 15,
   n <- length(ordered)
   option <- match.arg(option)
   if((option == "quantile") && (is.na(p)))
-    stop("Input a value for the probability p")
+    stop("\nInput a value for the probability p.\n")
   if ((option == "quantile") && (p < 1 - start/n)){
     cat("Graph may look strange !! \n\n")
     cat(paste("Suggestion 1: Increase `p' above", format(signif(1 - start/n, 5)), "\n"))
@@ -326,17 +450,19 @@ hillPlot <- function (data, option = c("alpha", "xi", "quantile"), start = 15,
   }
   return(invisible(list(x = index, y = y)))
 }
+
 ## QQ-Plot for GPD
-plotFittedGPDvsEmpiricalExcesses <- function(data, threshold = NA, nextremes = NA){
+plotFittedGPDvsEmpiricalExcesses <- function(data, threshold = NA, nextremes = NA)
+{
   if(is.na(nextremes) & is.na(threshold))
-    stop("Enter either a threshold or the number of upper extremes")
+    stop("\nEnter either a threshold or the number of upper extremes.\n")
   if(is.timeSeries(data)) data <- series(data)
   mod <- fit.GPD(data, threshold, nextremes)
   if(!is.na(nextremes)) threshold <- findthreshold(as.vector(data), nextremes)
   pECDF <- edf(mod$data)
   maxVal <- as.numeric(max(data))
   quantVector <- seq(threshold, maxVal, 0.25)
-  pG <- pGPD(quantVector-threshold, mod$par.ests["xi"], mod$par.ests["beta"]) 
+  pG <- pGPD(quantVector-threshold, mod$par.ests["xi"], mod$par.ests["beta"])
   plot(quantVector, pG, type = "l", log = "x", xlab = "x (log scale)", ylab = "Fu(x-u)")
   points(mod$data, pECDF, pch = 19, col = "blue")
 }

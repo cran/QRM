@@ -1,4 +1,21 @@
+## Copyright (C) 2013 Marius Hofert, Bernhard Pfaff
 ##
+## This program is free software; you can redistribute it and/or modify it under
+## the terms of the GNU General Public License as published by the Free Software
+## Foundation; either version 3 of the License, or (at your option) any later
+## version.
+##
+## This program is distributed in the hope that it will be useful, but WITHOUT
+## ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+## FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+## details.
+##
+## You should have received a copy of the GNU General Public License along with
+## this program; if not, see <http://www.gnu.org/licenses/>.
+
+
+## TODO: should all be deprecated -- use package 'copula'
+
 ## Random variates
 ##
 ## Wrapper function for AC
@@ -63,9 +80,9 @@ rAC <- function(name = c("clayton", "gumbel", "frank", "BB9", "GIG"), n, d, thet
 rACp <- function(name = c("clayton", "gumbel", "frank", "BB9", "GIG"), n, d, theta, A){
   name <- match.arg(name)
   p <- length(theta)
-  if ((dim(A)[1] != d) | (dim(A)[2] !=p)) stop("Weight matrix A has incorrect dimensions")
+  if ((dim(A)[1] != d) | (dim(A)[2] !=p)) stop("\nWeight matrix 'A' has incorrect dimensions.\n")
   sumcheck <- apply(A, 1, sum) - rep(1,d)
-  if (sum(sumcheck^2) != 0) stop("Weights do not sum to one")
+  if (sum(sumcheck^2) != 0) stop("\nWeights do not sum to one.\n")
   for (j in 1:p){
     tmp <- rAC(name = name, n = n, d = d, theta = theta[j])
     Amat <- matrix(A[, j], ncol = d, nrow = n, byrow = TRUE)
@@ -103,7 +120,7 @@ rFrankMix <- function(n, theta){
   tmp <- .C("frank",
             as.integer(n),
             as.double(theta),
-            res= as.double(output), 
+            res= as.double(output),
             PACKAGE="QRM")$res
     return(tmp)
 }
@@ -127,7 +144,7 @@ rcopula.Gumbel2Gp <- function(n = 1000, gpsizes = c(2, 2), theta =c(2, 3, 5)){
   innerU1 <- rcopula.gumbel(n, theta[2] / theta[1], gpsizes[1])
   innerU2 <- rcopula.gumbel(n, theta[3] / theta[1], gpsizes[2])
   U <- cbind(innerU1, innerU2)
-  Y <- matrix(Y, nrow = n, ncol = sum(gpsizes))                               
+  Y <- matrix(Y, nrow = n, ncol = sum(gpsizes))
   out <- exp( - ( - log(U) / Y)^(1 / theta[1]))
   out
 }
@@ -141,7 +158,7 @@ rcopula.GumbelNested <- function(n, theta){
     U <- runif(n)
     innerU <- rcopula.GumbelNested(n, theta[-1] / theta[1])
     U <- cbind(U, innerU)
-    Y <- matrix(Y, nrow = n, ncol = d)                               
+    Y <- matrix(Y, nrow = n, ncol = d)
     out <- exp( - ( - log(U) / Y)^(1 / theta[1]))
   }
   out
@@ -153,7 +170,7 @@ rcopula.GumbelNested <- function(n, theta){
 dcopula.AC <- function(u, theta, name = c("clayton", "gumbel"), log = TRUE){
   name <- match.arg(name)
   d <- dim(u)[2]
-  if ((name == "gumbel") & (d > 2)) stop("Only bivariate Gumbel implemented")
+  if ((name == "gumbel") & (d > 2)) stop("\nOnly bivariate Gumbel implemented.\n")
   illegalpar <- switch(name,
 		clayton = (theta <= 0),
 		gumbel = (theta <= 1))
@@ -180,7 +197,7 @@ dcopula.AC <- function(u, theta, name = c("clayton", "gumbel"), log = TRUE){
 ## Clayton
 dcopula.clayton <- function(u, theta, log = FALSE){
   d <- dim(u)[2]
-  if(d > 2) stop("Clayton copula density only implemented for d = 2")
+  if(d > 2) stop("\nClayton copula density only implemented for d = 2.\n")
   u1 <- u[, 1]
   u2 <- u[, 2]
   out <- log(1 + theta) + (-1 - theta) * log(u1 * u2) + (-2 - 1 / theta) * log(u1^(-theta) + u2^(-theta) - 1)
@@ -190,7 +207,7 @@ dcopula.clayton <- function(u, theta, log = FALSE){
 ## Gumbel
 dcopula.gumbel <- function(u, theta, log = FALSE){
   d <- dim(u)[2]
-  if(d > 2) stop("Gumbel copula density only implemented for d = 2")
+  if(d > 2) stop("\nGumbel copula density only implemented for d = 2.\n")
   u1 <- u[, 1]
   u2 <- u[, 2]
   innerfunc <- function(x, y, theta){((-log(x))^theta + (-log(y))^theta)^(1 / theta)}
@@ -212,7 +229,7 @@ fit.AC <- function(Udata, name = c("clayton", "gumbel"), initial = 2, ...){
     fit <- nlminb(initial, negloglik, data = Udata, name = name, lower = lower, ...)
   } else {
     fit <- nlminb(initial, negloglik, data = Udata, name = name, ...)
-  } 
+  }
   theta <- fit$par
   ifelse(fit$convergence == 0, converged <- TRUE, converged <- FALSE)
   hessianmatrix <- hessian(negloglik, theta, data = Udata, name = name)
