@@ -31,7 +31,7 @@ n <- round(cbind(A = 2800 + 800 * sin(pi*seq(0.2, 1, length.out=nyrs)),
 rownames(n) <- yrs # set row names
 B <- 32 # number of bootstrap replications (rather small here)
 u <- 200 # threshold
-edof <- 3 # equivalent degrees of freedom
+edof <- 3 # degrees of freedom
 ## => note: by *not* specifying "fx=TRUE, k=edof+1, bs="cr" for fitting lambda, the fits are slightly better
 eps <- 0.005 # epsilon to determine convergence (speed up calculations)
 niter <- 32 # maximal number of iterations (speed up calculations)
@@ -162,7 +162,7 @@ x.num <- x.num[order(x.num$group, x.num$year),] # sort (simplifies VaR computati
 ## fit lambda
 modlam <- gam(num~group+s(year, fx=TRUE, k=edof+1, bs="cr")-1, # => bad fit
               data=x.num, family=poisson)
-modlam <- gam(num~group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1, # => fine
+modlam <- gam(num~group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1, # => fine (interaction)
               data=x.num, family=poisson)
 
 ## compute fitted and predicted values incl. pointwise asymptotic CIs
@@ -233,16 +233,16 @@ if(file.exists(sfile)){
 } else {
     ## note: - see ?s -> by: a replicate of the smooth is produced for each factor level
     ##       - this takes some minutes... get a coffee
-    ##       - the result object will be stored in 'game.rds' in your working directory
+    ##       - the result object will be stored in 'game.rds' in your working directory (~ 800MB!)
     bootGPD <- gamGPDboot(x, B=B, threshold=u, datvar="loss",
-                          xiFrhs = ~ group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1,
-                          nuFrhs = ~ group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1,
-                          niter=niter, epsxi=eps, epsnu=eps)
-    saveRDS(bootGPD, file=sfile) # save the bootstrapped object
+                          xiFrhs = ~ group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1, # interaction
+                          nuFrhs = ~ group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1, # interaction
+                          niter=niter, eps.xi=eps, eps.nu=eps)
+    saveRDS(bootGPD, file=sfile) # save the bootstrapped object (takes some min, too!)
 }
 
 ## compute fitted values of xi, beta and CIs (pointwise bootstrapped)
-xibetaFit <- get.GPD.fit(bootGPD, alpha=a)
+xibetaFit <- get.GPD.fit(bootGPD, alpha=a) # several s
 
 ## compute predicted values
 xibetaPred <- GPD.predict(bootGPD)

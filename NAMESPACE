@@ -28,7 +28,7 @@ import(timeSeries)
 ## importFrom
 importFrom("gsl", psi)
 importFrom("mgcv", gam, s)
-
+importFrom(Rcpp, evalCpp)
 
 ### exports ####################################################################
 
@@ -170,4 +170,5 @@ export(BiDensPlot,
 export(gamGPDfit, gamGPDboot, # main 'game'-related tools
        get.lambda.fit, lambda.predict, # auxiliary functions
        get.GPD.fit, GPD.predict,
-       risk.measure)
+       risk.measure,
+       VaRbound)
