@@ -1,11 +1,11 @@
-9013c85a833db935e32c233718a2c4d7 *DESCRIPTION
-d4f8301d0e121b4efd259ba2d7483ca1 *NAMESPACE
+01fb315f831e0a69e0192df9fd9679f3 *DESCRIPTION
+9bb30f60a7f098ad2f9c3082a32bf889 *NAMESPACE
 2d52c761d44e30b40f82b240080f910c *R/CopulaAC.R
 9240a8c2fa0707547d05973e6fc69229 *R/CopulaGauss.R
 8a7ceec202a6d413dd6f6b13eabba0bf *R/CopulaStudent.R
 8f5346a978e754925061b65f522e2d90 *R/Correlations.R
 77b0a588fda1efd6c6ea91617e8ac6e9 *R/Credit.R
-33435dfac8be1fec89a0e7050145cb14 *R/Defunct.R
+3bc7a5810274a9a7abd78848f2ec908e *R/Defunct.R
 adc66a363488ac0187e53715c69f57a5 *R/GEV.R
 d2fe4e78a6d40fbac656e55a3008adda *R/GHYP.R
 90900c0beb6308aff6e8ea86490eb07e *R/GIG.R
@@ -14,8 +14,7 @@ da518ac939a7884e2e5a11d7655ba4fc *R/GPD.R
 500d016c39dcae37b7992c980eb4738d *R/NH.R
 3fcfdb8ea26eecb7d6f78e57df144d61 *R/POT.R
 304818d28b7b5e499f1d6c9725bc20bc *R/PlotFunc.R
-adcde2f74c2f85d76748c10a7d4c6175 *R/PointProcess.R
-8d60ce38d1d70003cd0407f77fdfe2b9 *R/RcppExports.R
+2f55eced9ee8168d6289e74f67b0b937 *R/RcppExports.R
 73720fb2dec1710aa94aad677a1957e0 *R/Student.R
 44785be84da4aed4756c244ce38c3537 *R/Utility.R
 16e844129780451a3d7a9e0fcd52d5c8 *R/VaRbound.R
@@ -50,7 +49,6 @@ d8992a781e0200550edffef0269fd6aa *data/xdax.RData
 ebfe412a8d9600bf43a1cd61e56d8e59 *data/xdax.df.RData
 a1645047af2805f32a7781937f8cc415 *demo/00Index
 b2bc9e5495b1d8aa996afcc6f3c897fa *demo/game.R
-6cb7d552d18a9d03dee1e186e1e4b005 *inst/TODO.org
 ee77f8ed391831563f87973d7dd9719a *man/Bidensplot.Rd
 0811fdedbe35b1bb96b60d8a7344df77 *man/CopulaAC.Rd
 109e07acc8073d078cdf352344443267 *man/CopulaGauss.Rd
@@ -70,9 +68,8 @@ ab7a6d995f45524c10662fccd10a276b *man/GHYP.Rd
 5faefc39ea4135a05b0dce6effe0dfa4 *man/POT.Rd
 85a453f9a1d0a9b1b74f37283f04118b *man/Pconstruct.Rd
 c5aa53e18527e96cd44308d97cb3b2d6 *man/Pdeconstruct.Rd
-393bd43f6f2fe99a1ed7f455827a22ad *man/PointProcess.Rd
 1746e721be12da10d45189582df7d85f *man/QQPlot.Rd
-635d7f16f4ca45f05b33ad0e704820cd *man/QRM-defunct.Rd
+0fbdf7d0d2cf95421018b696aae098b8 *man/QRM-defunct.Rd
 9d532875dd42bd86d09b3acc5f1d1f6c *man/QRM-package.Rd
 1652bbaae489013eb0b79a8475fc10b1 *man/Spearman.Rd
 0c3bff665adbca8108c4729e4834cd3e *man/Student.Rd
@@ -94,5 +91,5 @@ ad65bf506dc2a521bddbb65aa9ad1ef2 *man/sp500.Rd
 7ff1f1347978825596b968f763310fb4 *man/spdata.Rd
 cef334bdd81a59edd844bcb3800c3297 *man/spdata.raw.Rd
 ed4822b0611f8b8836b5551fc5392d25 *man/xdax.Rd
-795b138ca434b1d8ba4279dbe24952f6 *src/QRM.cpp
-ff6ab7aad41a86809eb1d6941bfa024d *src/RcppExports.cpp
+06fc1030156350752166ff4298c1f9ce *src/QRM.cpp
+71408f527c721d7bf7e08423c4bfe0dd *src/RcppExports.cpp
