@@ -1,14 +1,24 @@
 Package: QRM
-Version: 0.4-31
-Date: 2020-02-15
+Version: 0.4-35
+Date: 2025-04-06
 Title: Provides R-Language Code to Examine Quantitative Risk Management
         Concepts
-Authors@R: c(person("Bernhard", "Pfaff", email = "bernhard@pfaffikus.de", role = c("aut", "cre")), person("Marius", "Hofert", email = "marius.hofert@math.ethz.ch", role = "ctb"), person("Alexander", "McNeil", email = "mcneil@math.ethz.ch", role = "aut", comment = "S-Plus original (QRMlib)"), person("Scott", "Ulmann", role = "trl", comment = "First R port as package QRMlib"))
-Author: Bernhard Pfaff [aut, cre],
-  Marius Hofert [ctb],
-  Alexander McNeil [aut] (S-Plus original (QRMlib)),
-  Scott Ulmann [trl] (First R port as package QRMlib)
 Maintainer: Bernhard Pfaff <bernhard@pfaffikus.de>
+Authors@R: c(person(given = "Bernhard",
+                      family = "Pfaff",
+                      role = c("aut", "cre"),
+                      email = "bernhard@pfaffikus.de"),
+               person(given = "Marius",
+                      family = "Hofert",
+                      role = "ctb"),
+               person(given = "Alexander",
+                      family = "McNeil)",
+                      role = "aut",
+                      comment = "QRMlib"),
+               person(given = "Scott",
+                      family = "Ulmann",
+                      role = "trl",
+                      comment = "First R port as package QRMlib"))
 Description: Provides functions/methods to accompany the book
  Quantitative Risk Management: Concepts, Techniques and Tools by
  Alexander J. McNeil, Ruediger Frey, and Paul Embrechts.
@@ -23,5 +33,9 @@ Repository: CRAN
 Repository/R-Forge/Project: qrm
 Repository/R-Forge/Revision: 105
 Repository/R-Forge/DateTimeStamp: 2020-01-27 21:36:47
-Date/Publication: 2020-02-15 23:00:02 UTC
-Packaged: 2020-02-15 21:25:47 UTC; bp
+Date/Publication: 2025-04-06 20:40:05 UTC
+Packaged: 2025-04-06 17:29:40 UTC; bp
+Author: Bernhard Pfaff [aut, cre],
+  Marius Hofert [ctb],
+  Alexander McNeil) [aut] (QRMlib),
+  Scott Ulmann [trl] (First R port as package QRMlib)

@@ -1,5 +1,5 @@
-01fb315f831e0a69e0192df9fd9679f3 *DESCRIPTION
-9bb30f60a7f098ad2f9c3082a32bf889 *NAMESPACE
+8b2c22722594e2a96fa8a1a360c0448c *DESCRIPTION
+e7d9f4c3032c10867b3254e15508a84d *NAMESPACE
 2d52c761d44e30b40f82b240080f910c *R/CopulaAC.R
 9240a8c2fa0707547d05973e6fc69229 *R/CopulaGauss.R
 8a7ceec202a6d413dd6f6b13eabba0bf *R/CopulaStudent.R
@@ -18,7 +18,7 @@ da518ac939a7884e2e5a11d7655ba4fc *R/GPD.R
 73720fb2dec1710aa94aad677a1957e0 *R/Student.R
 44785be84da4aed4756c244ce38c3537 *R/Utility.R
 16e844129780451a3d7a9e0fcd52d5c8 *R/VaRbound.R
-5c173b1d3b1c7ff243a1dd7f9fcde870 *R/game.R
+209d8377bc576fd0ed41b3286726b55d *R/game.R
 3302d16242948cbcf5862ebecfcb74f6 *data/DJ.RData
 0f687827a03c1ab8c8999c599ba4e2c6 *data/DJ.df.RData
 46c28c23eeb748589c350325f9f4028c *data/FXGBP.RData
@@ -48,9 +48,9 @@ edd6794f5298c589b4082bab12e22224 *data/spdata.df.RData
 d8992a781e0200550edffef0269fd6aa *data/xdax.RData
 ebfe412a8d9600bf43a1cd61e56d8e59 *data/xdax.df.RData
 a1645047af2805f32a7781937f8cc415 *demo/00Index
-b2bc9e5495b1d8aa996afcc6f3c897fa *demo/game.R
+3a5676c3ed2d963b24ac47c4e1ad6ef2 *demo/game.R
 ee77f8ed391831563f87973d7dd9719a *man/Bidensplot.Rd
-0811fdedbe35b1bb96b60d8a7344df77 *man/CopulaAC.Rd
+8dab41ac29ca981dda8549833bbdbc3b *man/CopulaAC.Rd
 109e07acc8073d078cdf352344443267 *man/CopulaGauss.Rd
 9d2d09dc3384edd30395fdc5bff8ed73 *man/CopulaStudent.Rd
 ebd6424021481177f6a84f9259b6d52a *man/Credit.Rd
@@ -81,8 +81,8 @@ a55493b121f3a477069ca5b7004bc34b *man/dji.Rd
 dcb175acc0dd4cb5fabe55343f0be3c7 *man/eigenmeth.Rd
 e3de7ac5f04dd3bdd6a82a07aa073a3f *man/equicorr.Rd
 bd072b185e1bdd04156383312f4daccf *man/ftse100.Rd
-1cf7ba17bc2bd0da3cfcb116a4a7c247 *man/game-aux.Rd
-a5a86922db1cb7e918992381aa35ed74 *man/game.Rd
+becbe9d70ba4013b93f4d63361fca2c9 *man/game-aux.Rd
+70a6e43521f149fde08df0d2ef28fb10 *man/game.Rd
 1af98d1c3bfd97bf78d5f5f7f4e58a43 *man/hsi.Rd
 46c52a05508706ec0a2a2b4552b7e982 *man/nasdaq.Rd
 f17f4bcea0a90b189f93c7daaa53b270 *man/nikkei.Rd
